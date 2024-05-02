@@ -6,8 +6,7 @@ public class GameService : IGameService
 {
     private Dictionary<string, Room> Rooms { get; set; } = new();
     private Dictionary<string, string> PlayerToRoomMap { get; set; } = new();
-
-    public Task<string> JoinGame(string playerId, string roomId = "")
+    public Task<string> JoinRoom(string playerId, string roomId = "")
     {
         if (roomId == "")
         {
@@ -40,6 +39,16 @@ public class GameService : IGameService
         return Task.FromResult(newId.ToString());
     }
 
+    public Task StartGame(string roomId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> GameStarted(string roomId)
+    {
+        return Task.FromResult(Rooms[roomId].IsStarted);
+    }
+
     public Task<string> LeaveGame(string playerId)
     {
         var roomId = PlayerToRoomMap[playerId];
@@ -50,19 +59,19 @@ public class GameService : IGameService
         return Task.FromResult(roomId);
     }
 
-    public Task<bool> ShouldStartGame(string room)
+    public Task<bool> CanStartGame(string room)
     {
-        return Task.FromResult(Rooms[room].IsFull);
+        return Task.FromResult(Rooms[room].CanStart);
     }
 
-    public Task<string> GetRoomState(string roomId)
+    public Task<GameState> GetRoomState(string roomId)
     {
         if (Rooms.TryGetValue(roomId, out var value))
             return value.GetState();
         throw new Exception("Requesting state of non-existing room");
     }
 
-    Task<string> IGameService.SendAnswer(string playerId, string answer)
+    Task<GameState> IGameService.SendAnswer(string playerId, string answer)
     {
         if (!PlayerToRoomMap.TryGetValue(playerId, out var roomId))
             throw new Exception("Player not in room");

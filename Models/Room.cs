@@ -35,6 +35,7 @@ public class Room
 
     public bool IsFull => PlayerCount == MaxPlayers;
     public bool IsEmpty => PlayerCount == 0;
+    public bool CanStart => PlayerCount > 1;
 
     public void SendAnswer(string playerId, string answer)
     {
@@ -42,8 +43,8 @@ public class Room
         Console.WriteLine("ja sam kao uradio nesto");
     }
 
-    public Task<string> GetState()
+    public Task<GameState> GetState()
     {
-        return Task.FromResult("neki state");
+        return Task.FromResult(new GameState { Time = 10 });
     }
 }

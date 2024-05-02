@@ -11,6 +11,10 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddSignalR();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 builder.Services.AddSingleton<IGameService, GameService>();
 
 var app = builder.Build();
