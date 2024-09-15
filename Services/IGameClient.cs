@@ -4,8 +4,9 @@ namespace Slagalica.Services;
 
 public interface IGameClient
 {
-    Task OnJoinGame(string connectionId);
-    Task JoinedGame(string roomId);
+    Task JoinSuccessful(string connectionId);
+    Task JoinFailed(string reason);
+    Task PlayerJoinedGame(string username);
     Task ReceiveGameState(GameState state);
     Task OnLeftGame(string contextConnectionId);
     Task LeftGame();

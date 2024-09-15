@@ -5,9 +5,13 @@ namespace Slagalica.Services;
 
 public interface IGameService
 {
-    public Task<string> JoinRoom(string playerId, string roomId = "");
+    public bool JoinRoomById(string playerId, string username, string roomId);
+    public bool JoinRoomByPlayer(string playerId, string username, string otherPlayerId, out string message);
+    public bool JoinRoomByLevel(string playerId, string username, int level, out string message);
+    public bool RoomExists(string roomId);
+    public bool RoomIsFull(string roomId);
     public Task<string?> GetEmptyRoom();
-    public Task<string> CreateRoom(string playerId, int maxPlayers = 2);
+    public Task<string> CreateRoom(int roomLevel, int maxPlayers = 2);
     public Task StartGame(string roomId);
     public Task<bool> GameStarted(string roomId);
     public Task<string> LeaveGame(string playerId);

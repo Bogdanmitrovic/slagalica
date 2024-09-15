@@ -10,22 +10,59 @@ public class GameHub(IGameService gameService) : Hub<IGameClient>
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "timer");
     }
-    public async Task JoinGame(string roomId = "")
+
+    public async Task JoinRoomById(string username, string roomId)
     {
-        
-        var room = await gameService.JoinRoom(Context.ConnectionId, roomId);
-        await Groups.AddToGroupAsync(Context.ConnectionId, room);
-        await Clients.GroupExcept(room, Context.ConnectionId).OnJoinGame(Context.ConnectionId);
-        await Clients.Caller.JoinedGame(room);
-        //var shouldStartGame = await gameService.CanStartGame(room);
-        //if (shouldStartGame)
-        //{
-        //    await Clients.Group(roomId).PrepareForGame(0);
-        //    await Task.Delay(3000);
-        //    await Clients.Group(roomId).ReceiveGameState(gameService.GetRoomState(roomId).Result);
-        //}
+        if (!gameService.RoomExists(roomId))
+        {
+            await Clients.Caller.JoinFailed("Room does not exist");
+            return;
+        }
+
+        if (gameService.RoomIsFull(roomId))
+        {
+            await Clients.Caller.JoinFailed("Room is full");
+            return;
+        }
+
+        var success = gameService.JoinRoomById(Context.ConnectionId, username, roomId);
+        if (success) await Join(Context.ConnectionId, username, roomId);
+        else await Clients.Caller.JoinFailed("Failed to join room");
     }
-    //public async Task StartGame()
+
+    public async Task JoinRoomByPlayer(string username, string otherPlayerId)
+    {
+        var success = gameService.JoinRoomByPlayer(Context.ConnectionId, username, otherPlayerId, out var message);
+        if (success)
+            await Join(Context.ConnectionId, username, message);
+        else
+            await Clients.Caller.JoinFailed(message);
+    }
+
+    public async Task JoinRoomByLevel(string username, int level)
+    {
+        var success = gameService.JoinRoomByLevel(Context.ConnectionId, username, level, out var message);
+        if (success)
+            await Join(Context.ConnectionId, username, message);
+        else
+            await Clients.Caller.JoinFailed(message);
+    }
+
+    public async Task CreateRoom(string username, int level)
+    {
+        var roomId = await gameService.CreateRoom(level);
+        var success = gameService.JoinRoomById(Context.ConnectionId, username, roomId);
+        if (success) await Join(Context.ConnectionId, username, roomId);
+        else await Clients.Caller.JoinFailed("Failed to create room");
+    }
+
+    private async Task Join(string clientId, string username, string roomId)
+    {
+        await Clients.Group(roomId).PlayerJoinedGame(username);
+        await Groups.AddToGroupAsync(clientId, roomId);
+        await Clients.Caller.JoinSuccessful(roomId);
+    }
+
     public async Task LeaveGame()
     {
         var room = await gameService.LeaveGame(Context.ConnectionId);
@@ -33,6 +70,7 @@ public class GameHub(IGameService gameService) : Hub<IGameClient>
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, room);
         await Clients.Caller.LeftGame();
     }
+
     public async Task SendAnswer(string answer)
     {
         var gameState = await gameService.SendAnswer(Context.ConnectionId, answer);
