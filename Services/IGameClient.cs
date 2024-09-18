@@ -13,4 +13,6 @@ public interface IGameClient
     Task PrepareForGame(int gameIndex);
     Task StartTimer(string roomId, int seconds);
     Task StopTimer(string roomId);
+    Task LogServer();
+    Task GameStartingSoon();
 }

@@ -8,15 +8,18 @@ public class Room
     private int PlayerCount { get; set; }
     public bool IsPrivate { get; set; }
     public bool IsStarted { get; set; }
+    public bool IsQuickPlay { get; set; }
     public int RoomLevel { get; set; }
 
-    public Room(string roomId, int level, int maxPlayers)
+    public Room(string roomId, int level, int maxPlayers, bool isQuickPlay)
     {
         RoomLevel = level;
         RoomId = roomId;
         MaxPlayers = maxPlayers;
         Players = new Player?[MaxPlayers];
         PlayerCount = 0;
+        IsPrivate = !isQuickPlay;
+        IsQuickPlay = isQuickPlay;
     }
 
     public void AddPlayer(string playerId, string username)
@@ -40,17 +43,20 @@ public class Room
 
     public bool IsFull => PlayerCount == MaxPlayers;
     public bool IsEmpty => PlayerCount == 0;
-    public bool CanStart => PlayerCount > 1;
-
-    public bool PlayerCanStartGame(string playerId) => Players.Length>0&& Players[0]?.Id == playerId;
+    public bool CanStart => IsQuickPlay ? IsFull : PlayerCount > 1;
 
     public void SendAnswer(string playerId, string answer)
     {
-        Console.WriteLine("ja sam kao uradio nesto");
+        Console.WriteLine(playerId + ": " + answer);
     }
 
     public Task<GameState> GetState()
     {
         return Task.FromResult(new GameState { Time = 10 });
+    }
+
+    public void TimerOut()
+    {
+        Console.WriteLine(RoomId + " timed out");
     }
 }

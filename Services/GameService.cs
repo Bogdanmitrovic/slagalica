@@ -9,7 +9,7 @@ public class GameService : IGameService
     private const string Characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private Dictionary<string, Room> Rooms { get; set; } = new();
     private Dictionary<string, string> PlayerToRoomMap { get; set; } = new();
-
+    
     public bool JoinRoomById(string playerId, string username, string roomId)
     {
         if (!Rooms.TryGetValue(roomId, out var room)) return false;
@@ -28,6 +28,13 @@ public class GameService : IGameService
         }
 
         var room = Rooms[roomId];
+
+        if (!room.IsPrivate)
+        {
+            message = "Cannot join a friend in quick play";
+            return false;
+        }
+        
         if (room.IsFull)
         {
             message = "Room is full";
@@ -42,14 +49,19 @@ public class GameService : IGameService
 
     public bool JoinRoomByLevel(string playerId, string username, int level, out string message)
     {
-        var room = Rooms
-            .Where(x => !x.Value.IsFull)
-            .MinBy(x => Math.Abs(x.Value.RoomLevel - level));
         string roomId;
-        if (Rooms.Count == 0 || Math.Abs(room.Value.RoomLevel - level) > MaxLevelDifference)
-            roomId = CreateRoom(level).Result;
+        var possibleRooms = Rooms
+            .Where(x => x.Value is { IsFull: false, IsQuickPlay: true }).ToList();
+        if (possibleRooms.Count == 0)
+        {
+            roomId = CreateRoom(level, true).Result;
+        }
         else
-            roomId = room.Key;
+        {
+            var room = possibleRooms
+                .MinBy(x => Math.Abs(x.Value.RoomLevel - level));
+            roomId = Math.Abs(room.Value.RoomLevel - level) > MaxLevelDifference ? CreateRoom(level, true).Result : room.Key;
+        }
         Rooms[roomId].AddPlayer(playerId, username);
         PlayerToRoomMap[playerId] = roomId;
         message = roomId;
@@ -68,14 +80,15 @@ public class GameService : IGameService
 
     public Task<string?> GetEmptyRoom()
     {
+        // TODO delete?
         var emptyRoom = Rooms.FirstOrDefault(room => room.Value is { IsFull: false, IsPrivate: false });
         return emptyRoom.Key != null ? Task.FromResult<string?>(emptyRoom.Key) : Task.FromResult<string?>(null);
     }
 
-    public Task<string> CreateRoom(int roomLevel, int maxPlayers = 2)
+    public Task<string> CreateRoom(int roomLevel, bool isQuickplay, int maxPlayers = 2)
     {
         var newId = GenerateRoomId();
-        Rooms.Add(newId, new Room(newId, roomLevel, maxPlayers));
+        Rooms.Add(newId, new Room(newId, roomLevel, maxPlayers, isQuickplay));
         return Task.FromResult(newId);
     }
 
@@ -125,6 +138,34 @@ public class GameService : IGameService
         if (PlayerToRoomMap.TryGetValue(contextConnectionId, out var value))
             return Task.FromResult(value);
         throw new Exception("Player not in room");
+    }
+
+    public Task LogServer()
+    {
+        Console.WriteLine("rooms:");
+        foreach (var room in Rooms)
+        {
+            Console.WriteLine(room.Key);
+            Console.WriteLine(room.Value.IsFull);
+        }
+
+        foreach (var ptr in PlayerToRoomMap)
+        {
+            Console.WriteLine(ptr.Key + " - " + ptr.Value);
+        }
+        return Task.CompletedTask;
+    }
+
+    public bool RoomIsQuickplay(string roomId)
+    {
+        return Rooms[roomId].IsQuickPlay;
+    }
+
+    public Task TimerOutForRoom(string roomId)
+    {
+        Rooms.TryGetValue(roomId, out var room);
+        room?.TimerOut();
+        return Task.CompletedTask;
     }
 
     private string GenerateRoomId()

@@ -11,7 +11,7 @@ public interface IGameService
     public bool RoomExists(string roomId);
     public bool RoomIsFull(string roomId);
     public Task<string?> GetEmptyRoom();
-    public Task<string> CreateRoom(int roomLevel, int maxPlayers = 2);
+    public Task<string> CreateRoom(int roomLevel, bool isQuickplay, int maxPlayers = 2);
     public Task StartGame(string roomId);
     public Task<bool> GameStarted(string roomId);
     public Task<string> LeaveGame(string playerId);
@@ -19,4 +19,7 @@ public interface IGameService
     public Task<GameState> GetRoomState(string roomId);
     public Task<GameState> SendAnswer(string playerId, string answer);
     public Task<string> GetRoomOfPlayer(string contextConnectionId);
+    public Task LogServer();
+    public bool RoomIsQuickplay(string roomId);
+    public Task TimerOutForRoom(string roomId);
 }
