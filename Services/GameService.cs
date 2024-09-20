@@ -10,6 +10,7 @@ public class GameService : IGameService
     private Dictionary<string, Room> Rooms { get; set; } = new();
     private Dictionary<string, string> PlayerToRoomMap { get; set; } = new();
     
+    
     public bool JoinRoomById(string playerId, string username, string roomId)
     {
         if (!Rooms.TryGetValue(roomId, out var room)) return false;
@@ -85,10 +86,10 @@ public class GameService : IGameService
         return emptyRoom.Key != null ? Task.FromResult<string?>(emptyRoom.Key) : Task.FromResult<string?>(null);
     }
 
-    public Task<string> CreateRoom(int roomLevel, bool isQuickplay, int maxPlayers = 2)
+    public Task<string> CreateRoom(int roomLevel, bool isQuickPlay, int maxPlayers = 2)
     {
         var newId = GenerateRoomId();
-        Rooms.Add(newId, new Room(newId, roomLevel, maxPlayers, isQuickplay));
+        Rooms.Add(newId, new Room(newId, roomLevel, maxPlayers, isQuickPlay));
         return Task.FromResult(newId);
     }
 
@@ -120,7 +121,7 @@ public class GameService : IGameService
     public Task<GameState> GetRoomState(string roomId)
     {
         if (Rooms.TryGetValue(roomId, out var value))
-            return value.GetState();
+            return Task.FromResult(value.GetState());
         throw new Exception("Requesting state of non-existing room");
     }
 
@@ -129,8 +130,7 @@ public class GameService : IGameService
         if (!PlayerToRoomMap.TryGetValue(playerId, out var roomId))
             throw new Exception("Player not in room");
         var room = Rooms[roomId];
-        room.SendAnswer(playerId, answer);
-        return room.GetState();
+        return Task.FromResult(room.SendAnswer(playerId, answer));
     }
 
     public Task<string> GetRoomOfPlayer(string contextConnectionId)
@@ -161,11 +161,11 @@ public class GameService : IGameService
         return Rooms[roomId].IsQuickPlay;
     }
 
-    public Task TimerOutForRoom(string roomId)
+    public Task<GameState> TimerOutForRoom(string roomId)
     {
         Rooms.TryGetValue(roomId, out var room);
-        room?.TimerOut();
-        return Task.CompletedTask;
+        if (room == null) throw new Exception("Room not found");
+        return Task.FromResult(room.TimerOut());
     }
 
     private string GenerateRoomId()

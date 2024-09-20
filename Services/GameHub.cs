@@ -105,13 +105,14 @@ public class GameHub(IGameService gameService) : Hub<IGameClient>
     }
     public async Task TimerOut(string roomId)
     {
-        await gameService.TimerOutForRoom(roomId);
-        var gameState = await gameService.GetRoomState(roomId);
+        var gameState = await gameService.TimerOutForRoom(roomId);
+        if (gameState.Time != 0)
+            await Clients.Group("timer").StartTimer(roomId, gameState.Time);
         await Clients.Group(roomId).ReceiveGameState(gameState);
     }
     
     public async Task LogServer()
     {
-        gameService.LogServer();
+        await gameService.LogServer();
     }
 }
