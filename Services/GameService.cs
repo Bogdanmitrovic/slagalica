@@ -156,7 +156,7 @@ public class GameService : IGameService
         return Task.CompletedTask;
     }
 
-    public bool RoomIsQuickplay(string roomId)
+    public bool RoomIsQuickPlay(string roomId)
     {
         return Rooms[roomId].IsQuickPlay;
     }
@@ -166,6 +166,11 @@ public class GameService : IGameService
         Rooms.TryGetValue(roomId, out var room);
         if (room == null) throw new Exception("Room not found");
         return Task.FromResult(room.TimerOut());
+    }
+
+    public void CloseRoom(string roomId)
+    {
+        Rooms.Remove(roomId);
     }
 
     private string GenerateRoomId()

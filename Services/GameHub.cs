@@ -1,20 +1,17 @@
+using AutoMapper;
 using Microsoft.AspNetCore.SignalR;
 using SignalRSwaggerGen.Attributes;
+using Slagalica.Models.DTOs;
 
 namespace Slagalica.Services;
 
 [SignalRHub]
-public class GameHub(IGameService gameService) : Hub<IGameClient>
+public class GameHub(IGameService gameService, IMapper mapper) : Hub<IGameClient>
 {
     public async Task RegisterTimer()
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "timer");
         Console.WriteLine($"RegisterTimer: {Context.ConnectionId}");
-    }
-
-    public async Task Test()
-    {
-        Console.WriteLine("test");
     }
     
     public async Task JoinRoomById(string username, string roomId)
@@ -25,7 +22,7 @@ public class GameHub(IGameService gameService) : Hub<IGameClient>
             return;
         }
 
-        if (gameService.RoomIsQuickplay(roomId))
+        if (gameService.RoomIsQuickPlay(roomId))
         {
             await Clients.Caller.JoinFailed("Cannot join quick play room using room number!");
             return;
@@ -95,7 +92,7 @@ public class GameHub(IGameService gameService) : Hub<IGameClient>
         var roomId = await gameService.GetRoomOfPlayer(Context.ConnectionId);
         if (gameState.Time != 0)
             await Clients.Group("timer").StartTimer(roomId, gameState.Time);
-        await Clients.Group(roomId).ReceiveGameState(gameState);
+        await Clients.Group(roomId).ReceiveGameState(mapper.Map<GameStateDTO>(gameState));
     }
 
     public async Task StartGame(string roomId)
@@ -108,7 +105,12 @@ public class GameHub(IGameService gameService) : Hub<IGameClient>
         var gameState = await gameService.TimerOutForRoom(roomId);
         if (gameState.Time != 0)
             await Clients.Group("timer").StartTimer(roomId, gameState.Time);
-        await Clients.Group(roomId).ReceiveGameState(gameState);
+        await Clients.Group(roomId).ReceiveGameState(mapper.Map<GameStateDTO>(gameState));
+        if (gameState.RoomClosing)
+        {
+            await Clients.Group(roomId).LeftGame();
+            gameService.CloseRoom(roomId);
+        }
     }
     
     public async Task LogServer()

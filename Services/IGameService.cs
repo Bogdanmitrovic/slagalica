@@ -20,6 +20,7 @@ public interface IGameService
     public Task<GameState> SendAnswer(string playerId, string answer);
     public Task<string> GetRoomOfPlayer(string contextConnectionId);
     public Task LogServer();
-    public bool RoomIsQuickplay(string roomId);
+    public bool RoomIsQuickPlay(string roomId);
     public Task<GameState> TimerOutForRoom(string roomId);
+    public void CloseRoom(string roomId);
 }

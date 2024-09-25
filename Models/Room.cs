@@ -8,10 +8,9 @@ public class Room
     private string RoomId { get; set; }
     private GameState GameState { get; set; }
     public bool IsPrivate { get; set; }
-    public bool IsStarted { get; set; }
+    public bool IsStarted { get; private set; }
     public bool IsQuickPlay { get; set; }
     public int RoomLevel { get; set; }
-    public string CurrentGame { get; set; }
     private IGameStrategy? CurrentGameStrategy { get; set; }
 
     public Room(string roomId, int level, int maxPlayers, bool isQuickPlay)
@@ -29,11 +28,11 @@ public class Room
             PlayerCount = 0,
             Round = 0,
             GameEnded = false,
+            CurrentGame = "waiting",
             Time = 0
         };
         IsPrivate = !isQuickPlay;
         IsQuickPlay = isQuickPlay;
-        CurrentGame = "waiting";
     }
 
     public void AddPlayer(string playerId, string username)
@@ -56,6 +55,7 @@ public class Room
         }
 
         GameState.PlayerCount--;
+        GameState.RoomClosing = GameState.PlayerCount == 0; // TODO is this needed?
     }
 
     public bool IsFull => GameState.PlayerCount == MaxPlayers;
@@ -77,7 +77,52 @@ public class Room
 
     public GameState TimerOut()
     {
-        CurrentGameStrategy?.CalculatePoints(GameState);
+        if (IsStarted)
+        {
+            if (GameState.GameEnded)
+            {
+                LoadNextGameStrategy();
+                CurrentGameStrategy?.LoadQuestions(GameState);
+            }
+            else if (GameState.RoundEnded)
+                CurrentGameStrategy?.LoadQuestions(GameState);
+            else
+                CurrentGameStrategy?.CalculatePoints(GameState);
+        }
+        else
+        {
+            if (GameState.RoomClosing)
+            {
+                GameState.GameEnded = true;
+                GameState.RoundEnded = true;
+            }
+            else
+            {
+                IsStarted = true;
+                if (CurrentGameStrategy != null && !GameState.GameEnded) return GameState;
+                LoadNextGameStrategy();
+                CurrentGameStrategy?.LoadQuestions(GameState);
+            }
+        }
+        
         return GameState;
+    }
+
+    private void LoadNextGameStrategy()
+    {
+        switch (GameState.CurrentGame)
+        {
+            case "waiting":
+                CurrentGameStrategy = new LettersStrategy();
+                GameState.CurrentGame = "letters";
+                break;
+            case "letters":
+                CurrentGameStrategy = null;
+                GameState.CurrentGame = IsQuickPlay ? "finished" : "waiting";
+                IsStarted = false;
+                GameState.Time = 0;
+                GameState.RoomClosing = IsQuickPlay;
+                break;
+        }
     }
 }

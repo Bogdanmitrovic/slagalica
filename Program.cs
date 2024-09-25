@@ -1,3 +1,4 @@
+using Slagalica.Models.DTOs;
 using Slagalica.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,9 @@ builder.Logging.AddConsole();
 
 builder.Services.AddSingleton<IGameService, GameService>();
 builder.Services.AddHostedService<TimedHostedService>();
+
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddCors(options => options.AddPolicy("reactapp", policyBuilder =>
 {

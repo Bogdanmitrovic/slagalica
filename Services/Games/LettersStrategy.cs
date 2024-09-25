@@ -7,13 +7,17 @@ public class LettersStrategy : IGameStrategy
     private const int PlayersRoundBonus = 5;
     private const int LongerWordBonus = 5;
     private const int SecondsPerRound = 45;
-    private bool LegitWord(string word)
+    private const int SecondsBetweenRounds = 5;
+    private static int _questionIndex;
+    private static readonly string[][] Questions = [["м", "е", "р", "ш", "з", "а", "т", "т", "з", "б", "и", "а"], ["р", "а", "с", "к", "л", "а", "п", "а", "т", "и", "т", "е"]];
+    private static readonly string[][] Answers = [["размештати"],["расклапати"]];
+    private static bool LegitWord(string word)
     {
         // TODO check word
         return true;
     }
 
-    private int CalculateWordScore(string word, string[]? allowedLetters)
+    private static int CalculateWordScore(string word, string[]? allowedLetters)
     {
         if (!LegitWord(word)) return 0;
         var used = new bool[12];
@@ -56,32 +60,44 @@ public class LettersStrategy : IGameStrategy
             gameState.Points[i] += gameState.PointsWon[i];
         }
 
-        gameState.Round++;
-        if (gameState.Round > gameState.PlayerCount)
+        if (gameState.Round == gameState.PlayerCount)
         {
-            gameState.Round = 0;
             gameState.Time = 5;
             gameState.GameEnded = true;
         }
         else
         {
-            gameState.Time = SecondsPerRound;
+            gameState.Time = SecondsBetweenRounds;
+            gameState.RoundEnded = true;
         }
     }
 
     public void ReceiveAnswer(GameState gameState, PlayerAnswer playerAnswer)
     {
+        gameState.Time = 0; // TODO gde ovo treba da ide
         var i = gameState.PlayerIds.TakeWhile(playerId => playerAnswer.PlayerId != playerId).Count();
         // var order = gameState.PlayerAnswers.Count(answer => answer != null);
         // order++;
         // playerAnswer.Order = order;
         gameState.PlayerAnswers[i] = playerAnswer;
-        
+        var playersAnswered = gameState.PlayerAnswers.Count(answer => answer != null);
+        if (playersAnswered == gameState.PlayerCount)
+            CalculatePoints(gameState);
     }
 
     public void LoadQuestions(GameState gameState)
     {
-        gameState.Questions = [ "м", "е", "р", "ш", "з", "а", "т", "т", "з", "б", "и", "а" ];
-        gameState.Answers = ["размештати"];
+        for (var i = 0; i < gameState.PlayerCount; i++)
+        {
+            gameState.PlayerAnswers[i] = null;
+        }
+
+        gameState.Questions = Questions[_questionIndex % Questions.Length];
+        gameState.Answers = Answers[_questionIndex%Answers.Length];
+        _questionIndex++;
+        gameState.Time = SecondsPerRound;
+        gameState.Round++;
+        gameState.RoundEnded = false;
+        gameState.GameEnded = false;
     }
 }

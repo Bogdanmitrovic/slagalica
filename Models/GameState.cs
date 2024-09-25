@@ -2,12 +2,9 @@ namespace Slagalica.Models;
 
 public class GameState
 {
-    //public required Dictionary<string,PlayerAnswer> PlayerAnswers { get; set; }
     public required string[] PlayerIds { get; set; }
     public required string[] PlayerUsernames { get; set; }
-
     public required int[] Points { get; set; }
-
     // TODO last move needed?
     public string[]? Questions { get; set; }
     public string[]? Answers { get; set; }
@@ -17,6 +14,8 @@ public class GameState
     public int PlayerCount { get; set; }
     public int Round { get; set; }
     public bool GameEnded { get; set; }
-
+    public bool RoundEnded { get; set; }
+    public bool RoomClosing { get; set; }
+    public string? CurrentGame { get; set; }
     public int Time { get; set; }
 }
